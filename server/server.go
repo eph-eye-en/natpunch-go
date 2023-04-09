@@ -93,11 +93,16 @@ func main() {
 
 	port := os.Args[1]
 	if len(os.Args) > 2 {
-		priv, err := base64.StdEncoding.DecodeString(os.Args[2])
-		if err != nil || len(priv) != 32 {
-			fmt.Fprintln(os.Stderr, "Error parsing public key")
+		privEnc, err := os.ReadFile(os.Args[2])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error reading private key")
+		} else {
+			priv, err := base64.StdEncoding.DecodeString(string(privEnc))
+			if err != nil || len(priv) != 32 {
+				fmt.Fprintln(os.Stderr, "Error parsing public key")
+			}
+			copy(s.privKey[:], priv)
 		}
-		copy(s.privKey[:], priv)
 	} else {
 		rand.Read(s.privKey[:])
 		s.privKey.clamp()
