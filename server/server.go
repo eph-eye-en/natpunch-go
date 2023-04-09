@@ -84,7 +84,8 @@ type state struct {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "Usage:", os.Args[0], "PORT [PRIVATE_KEY]")
+		fmt.Fprintln(os.Stderr,
+			"Usage:", os.Args[0], "PORT [LISTEN_ADDR] [PRIVATE_KEY]")
 		os.Exit(1)
 	}
 
@@ -92,8 +93,13 @@ func main() {
 	var err error
 
 	port := os.Args[1]
+	addr := ""
 	if len(os.Args) > 2 {
-		privEnc, err := os.ReadFile(os.Args[2])
+		addr = string(os.Args[2])
+	}
+
+	if len(os.Args) > 3 {
+		privEnc, err := os.ReadFile(os.Args[3])
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Error reading private key")
 		} else {
@@ -110,13 +116,16 @@ func main() {
 
 	pubkey, _ := curve25519.X25519(s.privKey[:], curve25519.Basepoint)
 	fmt.Println("Starting nat-punching server on port", port)
+	if addr != "" {
+		fmt.Println("Binding to address", addr)
+	}
 	fmt.Println("Public key:", base64.StdEncoding.EncodeToString(pubkey))
 
 	s.keyMap = make(PeerMap)
 	s.indexMap = make(IndexMap)
 
 	// the client can only handle IPv4 addresses right now.
-	listenAddr, err := net.ResolveUDPAddr("udp4", ":"+port)
+	listenAddr, err := net.ResolveUDPAddr("udp4", addr+":"+port)
 	if err != nil {
 		log.Panicln("Error getting UDP address", err)
 	}
