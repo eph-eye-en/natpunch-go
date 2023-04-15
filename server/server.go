@@ -210,14 +210,13 @@ func (s *state) dataPacket(packet []byte, clientAddr *net.UDPAddr, timeout time.
 	// for later use
 	plaintext = plaintext[:6]
 
-	if s.iface != "" {
+	if s.iface == "" {
 		client.ip = clientAddr.IP
 		client.port = uint16(clientAddr.Port)
 	} else {
-		k := base64.StdEncoding.EncodeToString(client.pubkey[:])[:16]
+		k := base64.StdEncoding.EncodeToString(client.pubkey[:])
 		addr, err := cmd.GetPeerEndpoint(k, s.iface)
 		if err != nil {
-			log.Println("Warning: ", err)
 			return err
 		}
 		client.ip = addr.IP

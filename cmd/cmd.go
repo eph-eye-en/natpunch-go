@@ -52,11 +52,11 @@ func GetPeerEndpoint(peer string, iface string) (*net.UDPAddr, error) {
 	if err != nil {
 		log.Fatalln("Error getting peer endpoints", err)
 	}
-	prefix := peer + "    "
+	prefix := peer + "\t"
 	for _, line := range strings.Split(output, "\n") {
 		if strings.HasPrefix(line, prefix) {
-			idx := strings.LastIndex(strings.TrimPrefix(line, prefix), ":")
-			return net.ResolveUDPAddr(line[:idx], line[idx+1:])
+			addr := strings.TrimPrefix(line, prefix)
+			return net.ResolveUDPAddr("udp", addr)
 		}
 	}
 	return nil, errors.New("peer pubkey not found in endpoints")
