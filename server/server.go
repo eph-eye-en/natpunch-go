@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/flynn/noise"
+	"github.com/malcolmseyd/natpunch-go/cmd"
 	"github.com/malcolmseyd/natpunch-go/server/auth"
 	"golang.org/x/crypto/curve25519"
 )
@@ -80,12 +81,13 @@ type state struct {
 	keyMap   PeerMap
 	indexMap IndexMap
 	privKey  Key
+	iface    string
 }
 
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprintln(os.Stderr,
-			"Usage:", os.Args[0], "PORT [LISTEN_ADDR] [PRIVATE_KEY]")
+			"Usage:", os.Args[0], "PORT [LISTEN_ADDR] [PRIVATE_KEY] [WG_IFACE]")
 		os.Exit(1)
 	}
 
@@ -112,6 +114,10 @@ func main() {
 	} else {
 		rand.Read(s.privKey[:])
 		s.privKey.clamp()
+	}
+
+	if len(os.Args) > 4 {
+		s.iface = os.Args[4]
 	}
 
 	pubkey, _ := curve25519.X25519(s.privKey[:], curve25519.Basepoint)
@@ -195,6 +201,7 @@ func (s *state) dataPacket(packet []byte, clientAddr *net.UDPAddr, timeout time.
 
 	if !bytes.Equal(clientPubKey, client.pubkey[:]) {
 		err = ErrPubkey
+		//client.port = uint16(clientAddr.Port)
 		return
 	}
 
@@ -203,8 +210,19 @@ func (s *state) dataPacket(packet []byte, clientAddr *net.UDPAddr, timeout time.
 	// for later use
 	plaintext = plaintext[:6]
 
-	client.ip = clientAddr.IP
-	client.port = uint16(clientAddr.Port)
+	if s.iface != "" {
+		client.ip = clientAddr.IP
+		client.port = uint16(clientAddr.Port)
+	} else {
+		k := base64.StdEncoding.EncodeToString(client.pubkey[:])[:16]
+		addr, err := cmd.GetPeerEndpoint(k, s.iface)
+		if err != nil {
+			log.Println("Warning: ", err)
+			return err
+		}
+		client.ip = addr.IP
+		client.port = uint16(addr.Port)
+	}
 
 	targetPeer, peerExists := s.keyMap[targetPubKey]
 	if peerExists {

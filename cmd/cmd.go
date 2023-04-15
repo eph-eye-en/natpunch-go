@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"encoding/base64"
+	"errors"
 	"log"
+	"net"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -42,6 +44,22 @@ func GetPeers(iface string) []string {
 		log.Fatalln("Error getting peers:", err)
 	}
 	return strings.Split(strings.TrimSpace(output), "\n")
+}
+
+// GetPeerEndpoint returns the endpoint of a peer, specified by public key
+func GetPeerEndpoint(peer string, iface string) (*net.UDPAddr, error) {
+	output, err := RunCmd("wg", "show", iface, "endpoints")
+	if err != nil {
+		log.Fatalln("Error getting peer endpoints", err)
+	}
+	prefix := peer + "    "
+	for _, line := range strings.Split(output, "\n") {
+		if strings.HasPrefix(line, prefix) {
+			idx := strings.LastIndex(strings.TrimPrefix(line, prefix), ":")
+			return net.ResolveUDPAddr(line[:idx], line[idx+1:])
+		}
+	}
+	return nil, errors.New("peer pubkey not found in endpoints")
 }
 
 // GetClientPubkey returns the publib key on the Wireguard interface

@@ -14,9 +14,9 @@ import (
 	"github.com/ogier/pflag"
 
 	"github.com/malcolmseyd/natpunch-go/client/auth"
-	"github.com/malcolmseyd/natpunch-go/client/cmd"
 	"github.com/malcolmseyd/natpunch-go/client/network"
 	"github.com/malcolmseyd/natpunch-go/client/util"
+	"github.com/malcolmseyd/natpunch-go/cmd"
 )
 
 const persistentKeepalive = 25
